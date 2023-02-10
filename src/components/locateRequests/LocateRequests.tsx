@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import BrokerAllocationButton from '../BrokerAllocationButton';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Locate } from '../../common/interfaces';
-import { MachineLocatesMap } from '../../common/types';
+import useSymbolQuantity from '../../hooks/useSymbolQuantity';
+import BrokerAllocationButton from '../BrokerAllocationButton';
 import './LocateRequests.css';
 
 const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session'; //"https://task.qspark.trade/v1/session";
@@ -16,16 +16,17 @@ function fromResponseToLocates(data: Record<string, Record<string, number>>): Lo
 const LocateRequests: React.FC = () => {
   const [sessionId, setSessionId] = useState(null);
   const [locates, setLocates] = useState<Locate[]>([]);
-  const [machineAllocation, setMachineAllocation] = useState<Locate[]>([]);
+  const [newAllocation, setNewAllocation] = useState<Locate[]>([]);
+  const symbolQuantity = useSymbolQuantity(locates);
 
-  const machineLocatesMap = useMemo<MachineLocatesMap>(() => {
-    const machineMap: MachineLocatesMap = {};
-    locates.forEach((locate) => {
-      machineMap[locate.machine] = machineMap[locate.machine] ? [...machineMap[locate.machine], locate] : [locate];
-    });
+  // const machineLocatesMap = useMemo<MachineLocatesMap>(() => {
+  //   const machineMap: MachineLocatesMap = {};
+  //   locates.forEach((locate) => {
+  //     machineMap[locate.machine] = machineMap[locate.machine] ? [...machineMap[locate.machine], locate] : [locate];
+  //   });
 
-    return machineMap;
-  }, [locates]);
+  //   return machineMap;
+  // }, [locates]);
 
   // const symbolLocatesMap = useMemo<SymbolLocatesMap>(() => {
   //   const symbolMap: SymbolLocatesMap = {};
@@ -61,37 +62,23 @@ const LocateRequests: React.FC = () => {
       });
   };
 
-  const calculateProportionMap = useCallback(
-    (resources: Record<string, number>) => {
-      const proportions: Record<string, Record<string, number>> = {};
-      for (const [machine, locates] of Object.entries(machineLocatesMap)) {
-        proportions[machine] = {};
-        for (const { symbol, quantity } of locates) {
-          proportions[machine][symbol] = resources[symbol] !== 0 ? quantity / resources[symbol] : 0;
-        }
-      }
-
-      return proportions;
-    },
-    [machineLocatesMap]
-  );
-
   const updateNewLocates = useCallback(
     (brokerAllocations: Record<string, number>) => {
-      const proportionMap = calculateProportionMap(brokerAllocations);
-      const machineAllocation: Locate[] = [];
-      for (const [machine, locates] of Object.entries(proportionMap)) {
-        for (const [symbol, proportion] of Object.entries(locates)) {
-          const newQuantity = proportion * brokerAllocations[symbol];
-          brokerAllocations[symbol] -= newQuantity;
-          const newLocate: Locate = { machine, symbol, quantity: newQuantity };
-          machineAllocation.push(newLocate);
-        }
+      console.log('brokerAllocations', brokerAllocations);
+      let newAllocation: Locate[] = [];
+
+      for (const { machine, symbol, quantity } of locates) {
+        const currentSymbolQuantity = symbolQuantity[symbol];
+        const proportion = currentSymbolQuantity !== 0 ? quantity / currentSymbolQuantity : 0;
+        const newQuantity = Math.round(proportion * brokerAllocations[symbol]);
+        brokerAllocations[symbol] -= newQuantity;
+        const newLocate: Locate = { machine, symbol, quantity: newQuantity };
+        newAllocation = [...newAllocation, newLocate];
       }
-      console.log(machineAllocation);
-      setMachineAllocation(machineAllocation);
+
+      setNewAllocation(newAllocation);
     },
-    [calculateProportionMap]
+    [locates, symbolQuantity]
   );
 
   return (
@@ -128,7 +115,7 @@ const LocateRequests: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {machineAllocation.map(({ machine, symbol, quantity }) => (
+            {newAllocation.map(({ machine, symbol, quantity }) => (
               <tr key={`${machine},${symbol}`}>
                 <td>{machine}</td>
                 <td>{symbol}</td>
