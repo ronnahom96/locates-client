@@ -1,1 +1,1 @@
-export type Locates = Record<string, Record<string, string>>;
+export type Locates = Record<string, Record<string, number>>;
