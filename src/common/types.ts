@@ -1,0 +1,1 @@
+export type Locates = Record<string, Record<string, string>>;
