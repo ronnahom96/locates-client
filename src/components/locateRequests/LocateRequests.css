@@ -48,19 +48,17 @@ button:hover {
 
 h1 {
   text-align: center;
-  margin-bottom: 30px;
-  color: #0077be;
+  margin-bottom: 20px;
+  color: #1187cc;
   text-shadow: 2px 2px 10px #888888;
   font-size: 48px;
   font-weight: bold;
 }
 
-h2 {
-  margin-top: 40px;
+h3 {
   text-align: center;
   color: #00b0ff;
   text-shadow: 2px 2px 10px #888888;
-  font-size: 36px;
 }
 
 .green {

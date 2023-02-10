@@ -82,7 +82,8 @@ const LocateRequests: React.FC = () => {
 
   return (
     <>
-      <h1>Session ID: {sessionId}</h1>
+      <h1>Locates Client</h1>
+      <h3>Session ID: {sessionId}</h3>
       <div className="button-container">
         <button className="button" onClick={handleRequestClick}>
           Retrieve Locate Requests
