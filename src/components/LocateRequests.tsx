@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Locates } from '../common/types';
-import GeLocatesFromBrokerButton from './GeLocatesFromBrokerButton';
+import BrokerAllocationButton from './BrokerAllocationButton';
+import { BrokerAllocate } from '../common/interfaces';
 
 const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session'; //"https://task.qspark.trade/v1/session";
 
@@ -34,11 +35,15 @@ const LocateRequests: React.FC = () => {
       });
   };
 
+  const updateLocates = useCallback((brokerAllocations: BrokerAllocate[]) => {
+    console.log('update from the data', brokerAllocations);
+  }, []);
+
   return (
     <div>
       <h1>Session ID: {sessionId}</h1>
       <button onClick={handleRequestClick}>Retrieve Locate Requests</button>
-      <GeLocatesFromBrokerButton locates={locates} sessionId={sessionId} />
+      <BrokerAllocationButton locates={locates} sessionId={sessionId} updateLocates={updateLocates} />
       <table>
         <thead>
           <tr>
