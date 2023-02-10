@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Locates } from "../common/types";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Locates } from '../common/types';
+import GeLocatesFromBrokerButton from './GeLocatesFromBrokerButton';
 
-const baseUrl =
-  "https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session"; //"https://task.qspark.trade/v1/session";
+const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session'; //"https://task.qspark.trade/v1/session";
 
 const LocateRequests: React.FC = () => {
   const [sessionId, setSessionId] = useState(null);
@@ -38,6 +38,7 @@ const LocateRequests: React.FC = () => {
     <div>
       <h1>Session ID: {sessionId}</h1>
       <button onClick={handleRequestClick}>Retrieve Locate Requests</button>
+      <GeLocatesFromBrokerButton locates={locates} sessionId={sessionId} />
       <table>
         <thead>
           <tr>
