@@ -7,7 +7,7 @@ function fromLocatesToSymbolQuantity(locates: Record<string, Record<string, numb
     .map(([machine, symbols]) => Object.entries(symbols).map(([symbol, quantity]) => ({ machine, quantity, symbol })))
     .flat()
     .forEach(({ symbol, quantity }) => {
-      symbolQuantity[symbol] = symbolQuantity[symbol] ? symbolQuantity[symbol] + quantity : quantity;
+      symbolQuantity[symbol] = (symbolQuantity[symbol] || 0) + quantity;
     });
 
   return symbolQuantity;
