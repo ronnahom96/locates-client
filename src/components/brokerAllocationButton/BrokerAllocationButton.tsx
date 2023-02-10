@@ -1,10 +1,11 @@
 /* eslint-disable */
 import { AxiosResponse } from 'axios';
 import React from 'react';
-import { allocateFromBroker } from '../common/api';
-import { BrokerAllocate } from '../common/interfaces';
-import { Locates } from '../common/types';
-import useSymbolQuantity from '../hooks/useSymbolQuantity';
+import { allocateFromBroker } from '../../common/api';
+import { BrokerAllocate } from '../../common/interfaces';
+import { Locates } from '../../common/types';
+import useSymbolQuantity from '../../hooks/useSymbolQuantity';
+import './BrokerAllocationButton.css';
 
 interface BrokerAllocationButtonProps {
   sessionId: string | null;
@@ -38,7 +39,11 @@ const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ session
   const buildBrokerAllocationRequests = (sessionId: string) =>
     Object.entries(symbolQuantity).map(([symbol, quantity]) => allocateFromBroker(sessionId, symbol, quantity));
 
-  return <button onClick={handleRequestClick}>Get Locates From Broker</button>;
+  return (
+    <button className="button" onClick={handleRequestClick}>
+      Get Locates From Broker
+    </button>
+  );
 };
 
 export default BrokerAllocationButton;

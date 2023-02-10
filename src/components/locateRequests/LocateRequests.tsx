@@ -1,10 +1,9 @@
-/* eslint-disable no-unused-vars */
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { updateLocates } from '../../common/api';
 import { Locates } from '../../common/types';
 import useSymbolQuantity from '../../hooks/useSymbolQuantity';
-import BrokerAllocationButton from '../BrokerAllocationButton';
+import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
 import './LocateRequests.css';
 
 const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session'; //"https://task.qspark.trade/v1/session";
@@ -85,7 +84,9 @@ const LocateRequests: React.FC = () => {
     <>
       <h1>Session ID: {sessionId}</h1>
       <div className="button-container">
-        <button onClick={handleRequestClick}>Retrieve Locate Requests</button>
+        <button className="button" onClick={handleRequestClick}>
+          Retrieve Locate Requests
+        </button>
         <BrokerAllocationButton locates={locates} sessionId={sessionId} updateNewLocates={updateNewLocates} />
       </div>
       <div className="container">
@@ -95,21 +96,23 @@ const LocateRequests: React.FC = () => {
               <th>Machine</th>
               <th>Symbol</th>
               <th>Locates</th>
-              <th>Provided Value</th>
+              <th>Locates From Broker</th>
             </tr>
           </thead>
           <tbody>
             {Object.entries(locates).map(([machine, symbols]) => (
-              <>
+              <React.Fragment key={machine}>
                 {Object.entries(symbols).map(([symbol, locates]) => (
-                  <tr key={symbol}>
+                  <tr key={`${machine},${symbol}`}>
                     <td>{machine}</td>
                     <td>{symbol}</td>
                     <td>{locates}</td>
-                    <td>{newAllocation[machine] ? newAllocation[machine][symbol] : '-'}</td>
+                    <td className={newAllocation[machine] != null && newAllocation[machine][symbol] !== 0 ? 'green' : 'red'}>
+                      {newAllocation[machine] ? newAllocation[machine][symbol] : '-'}
+                    </td>
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
