@@ -48,7 +48,7 @@ const LocateRequests: React.FC = () => {
         </thead>
         <tbody>
           {Object.entries(locates).map(([machine, symbols]) => (
-            <div key={machine}>
+            <React.Fragment key={machine}>
               {Object.entries(symbols).map(([symbol, locates]) => (
                 <tr key={symbol}>
                   <td>{machine}</td>
@@ -56,7 +56,7 @@ const LocateRequests: React.FC = () => {
                   <td>{locates}</td>
                 </tr>
               ))}
-            </div>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
