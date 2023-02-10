@@ -2,12 +2,13 @@
 import { AxiosResponse } from 'axios';
 import React from 'react';
 import { allocateFromBroker } from '../common/api';
-import { BrokerAllocate, Locate } from '../common/interfaces';
+import { BrokerAllocate } from '../common/interfaces';
+import { Locates } from '../common/types';
 import useSymbolQuantity from '../hooks/useSymbolQuantity';
 
 interface BrokerAllocationButtonProps {
   sessionId: string | null;
-  locates: Locate[] | null;
+  locates: Locates | null;
   updateNewLocates: (brokerAllocations: Record<string, number>) => void;
 }
 
