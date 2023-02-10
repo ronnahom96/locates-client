@@ -2,24 +2,34 @@
 import { AxiosResponse } from 'axios';
 import React from 'react';
 import { allocateFromBroker } from '../common/api';
-import { BrokerAllocate } from '../common/interfaces';
-import { Locates } from '../common/types';
+import { BrokerAllocate, Locate } from '../common/interfaces';
 import useSymbolQuantity from '../hooks/useSymbolQuantity';
 
 interface BrokerAllocationButtonProps {
   sessionId: string | null;
-  locates: Locates | null;
-  updateLocates: (brokerAllocations: BrokerAllocate[]) => void;
+  locates: Locate[] | null;
+  updateNewLocates: (brokerAllocations: Record<string, number>) => void;
 }
 
-const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, locates, updateLocates }) => {
-  const symbolQuantity = useSymbolQuantity(locates);
+const fromRawToBrokerAllocationMap = (brokerAllocationRaw: BrokerAllocate[]) => {
+  const brokerAllocations: Record<string, number> = {};
+  for (const { symbol, quantity } of brokerAllocationRaw) {
+    brokerAllocations[symbol] = quantity;
+  }
 
+  return brokerAllocations;
+};
+
+const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, locates, updateNewLocates }) => {
+  const symbolQuantity = useSymbolQuantity(locates);
+  
   const handleRequestClick = async () => {
     const allRequests = buildBrokerAllocationRequests();
     const responseArray: AxiosResponse<BrokerAllocate>[] = (await Promise.all(allRequests)) as AxiosResponse<BrokerAllocate>[];
-    const brokerAllocations: BrokerAllocate[] = responseArray.map((response) => response.data);
-    updateLocates(brokerAllocations);
+    const brokerAllocationRaw = responseArray.map((response) => response.data);
+    const brokerAllocations = fromRawToBrokerAllocationMap(brokerAllocationRaw);
+
+    updateNewLocates(brokerAllocations);
   };
 
   const buildBrokerAllocationRequests = () =>

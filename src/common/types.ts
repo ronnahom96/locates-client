@@ -1,2 +1,4 @@
-export type Locates = Record<string, MachineRequest>;
-export type MachineRequest = Record<string, number>;
+import { Locate } from "./interfaces"
+
+export type MachineLocatesMap = Record<string, Locate[]>;
+export type SymbolLocatesMap = Record<string, Locate[]>;

@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Locates, MachineRequest } from '../common/types';
+import { Locate } from '../common/interfaces';
 
 // TODO: check how to improve it
-function fromLocatesToSymbolQuantity(locates: Locates) {
+function fromLocatesToSymbolQuantity(locates: Locate[]) {
   const symbolQuantity: Record<string, number> = {};
-  const machineRequests: MachineRequest[] = Object.values(locates);
-  machineRequests.forEach((machineRequest) => {
-    Object.entries(machineRequest).forEach(([symbol, quantity]) => {
-      symbolQuantity[symbol] = symbolQuantity[symbol] ? symbolQuantity[symbol] + quantity : quantity;
-    });
-  });
+  locates.forEach(({symbol, quantity}) => {
+    symbolQuantity[symbol] = symbolQuantity[symbol] ? symbolQuantity[symbol] + quantity : quantity
+  })
 
   return symbolQuantity;
 }
 
-const useSymbolQuantity = (locates: Locates | null) => {
+const useSymbolQuantity = (locates: Locate[] | null) => {
   const [symbolQuantity, setSymbolQuantity] = useState<Record<string, number>>({});
 
   useEffect(() => {
