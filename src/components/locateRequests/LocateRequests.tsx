@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
+import { updateLocates } from '../../common/api';
 import { Locate } from '../../common/interfaces';
 import useSymbolQuantity from '../../hooks/useSymbolQuantity';
 import BrokerAllocationButton from '../BrokerAllocationButton';
@@ -76,9 +77,19 @@ const LocateRequests: React.FC = () => {
         newAllocation = [...newAllocation, newLocate];
       }
 
+      if (!sessionId) return console.error('No Session found');
+
+      updateLocates(sessionId, newAllocation)
+        .then((response): any => {
+          if (response.status === 200) {
+            console.log('Congratulations! You have successfully update the new locates!');
+          }
+        })
+        .catch(console.error);
+
       setNewAllocation(newAllocation);
     },
-    [locates, symbolQuantity]
+    [sessionId, locates, symbolQuantity]
   );
 
   return (
