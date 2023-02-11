@@ -3,13 +3,11 @@ import { AxiosResponse } from 'axios';
 import React from 'react';
 import { allocateFromBroker } from '../../common/api';
 import { BrokerAllocate } from '../../common/interfaces';
-import { Locates } from '../../common/types';
-import useSymbolQuantity from '../../hooks/useSymbolQuantity';
 import './BrokerAllocationButton.css';
 
 interface BrokerAllocationButtonProps {
   sessionId: string | null;
-  locates: Locates | null;
+  symbolQuantity: Record<string, number>;
   updateNewLocates: (brokerAllocations: Record<string, number>) => void;
 }
 
@@ -22,9 +20,7 @@ const fromRawToBrokerAllocationMap = (brokerAllocationRaw: BrokerAllocate[]) => 
   return brokerAllocations;
 };
 
-const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, locates, updateNewLocates }) => {
-  const symbolQuantity = useSymbolQuantity(locates);
-
+const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, symbolQuantity, updateNewLocates }) => {
   const handleRequestClick = async () => {
     if (!sessionId) return console.error('No Session found');
 

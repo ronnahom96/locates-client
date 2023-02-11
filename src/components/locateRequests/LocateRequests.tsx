@@ -93,7 +93,7 @@ const LocateRequests: React.FC = () => {
         <button className="button" onClick={handleRequestClick}>
           Retrieve Locate Requests
         </button>
-        <BrokerAllocationButton locates={locates} sessionId={sessionId} updateNewLocates={updateNewLocates} />
+        <BrokerAllocationButton symbolQuantity={symbolQuantity} sessionId={sessionId} updateNewLocates={updateNewLocates} />
       </div>
       <div className="container">
         <table>
