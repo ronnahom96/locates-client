@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { AxiosResponse } from 'axios';
 import React from 'react';
-import { allocateFromBroker } from '../../common/api';
+import { allocateFromBroker, executeMultipleRequest } from '../../common/api';
 import { BrokerAllocate } from '../../common/interfaces';
 import { Locates } from '../../common/types';
 import useSymbolQuantity from '../../hooks/useSymbolQuantity';
@@ -29,7 +29,8 @@ const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ session
     if (!sessionId) return console.error('No Session found');
 
     const allRequests = buildBrokerAllocationRequests(sessionId);
-    const responseArray: AxiosResponse<BrokerAllocate>[] = (await Promise.all(allRequests)) as AxiosResponse<BrokerAllocate>[];
+    const delay = 3000;
+    const responseArray = (await executeMultipleRequest(allRequests, delay)) as AxiosResponse<BrokerAllocate>[];
     const brokerAllocationRaw = responseArray.map((response) => response.data);
     const brokerAllocations = fromRawToBrokerAllocationMap(brokerAllocationRaw);
 
