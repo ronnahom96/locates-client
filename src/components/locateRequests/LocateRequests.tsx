@@ -12,6 +12,7 @@ const LocateRequests: React.FC = () => {
   const [sessionId, setSessionId] = useState(null);
   const [locates, setLocates] = useState<Locates>({});
   const [newAllocation, setNewAllocation] = useState<Locates>({});
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const symbolQuantity = useSymbolQuantity(locates);
 
@@ -70,10 +71,13 @@ const LocateRequests: React.FC = () => {
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
           if (response.status === 200) {
-            alert('Congratulations! You have successfully update the new locates!');
+            setShowSuccessMessage(true);
           }
         })
-        .catch(console.error);
+        .catch((error) => {
+          setShowSuccessMessage(false);
+          console.error(error);
+        });
 
       setNewAllocation(newAllocation);
     },
@@ -83,6 +87,7 @@ const LocateRequests: React.FC = () => {
   return (
     <>
       <h1>Locates Client</h1>
+      {showSuccessMessage && <h2 className="success-message">Congratulations! You have successfully update the new locates!</h2>}
       <h3>Session ID: {sessionId}</h3>
       <div className="button-container">
         <button className="button" onClick={handleRequestClick}>
@@ -97,7 +102,7 @@ const LocateRequests: React.FC = () => {
               <th>Machine</th>
               <th>Symbol</th>
               <th>Locates</th>
-              <th>Locates From Broker</th>
+              <th>New Locates</th>
             </tr>
           </thead>
           <tbody>
