@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { updateLocates } from '../../common/api';
 import { Locates } from '../../common/types';
-import useSymbolQuantity from '../../hooks/useSymbolQuantity';
+import useTotalRequireSymbol from '../../hooks/useTotalRequireSymbol';
 import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
 import './LocateRequests.css';
 
@@ -14,7 +14,7 @@ const LocateRequests: React.FC = () => {
   const [newAllocation, setNewAllocation] = useState<Locates>({});
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const symbolQuantity = useSymbolQuantity(locates);
+  const totalRequireSymbol = useTotalRequireSymbol(locates);
 
   useEffect(() => {
     // Create a new session when the component mounts
@@ -41,24 +41,40 @@ const LocateRequests: React.FC = () => {
       });
   };
 
+  const isCanAllocate = (allocations: Record<string, number>, symbolRequired: Record<string, number>): boolean => {
+    for (const [symbol, quantity] of Object.entries(allocations)) {
+      if (quantity !== 0 && symbolRequired[symbol] !== 0) return true;
+    }
+
+    return false;
+  };
+
   const calculateNewAllocation = useCallback(
-    (brokerAllocations: Record<string, number>) => {
+    (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
       const newAllocation: Locates = {};
 
-      for (const [machine, symbols] of Object.entries(locates)) {
-        newAllocation[machine] = {};
-        for (const [symbol, quantity] of Object.entries(symbols)) {
-          const currentSymbolQuantity = symbolQuantity[symbol];
-          const proportion = currentSymbolQuantity !== 0 ? quantity / currentSymbolQuantity : 0;
-          const newQuantity = Math.round(proportion * brokerAllocations[symbol]);
-          brokerAllocations[symbol] -= newQuantity;
-          newAllocation[machine][symbol] = newQuantity;
+      while (isCanAllocate(brokerAllocations, totalRequireSymbol)) {
+        for (const [machine, symbols] of Object.entries(locates)) {
+          newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
+
+          for (const [symbol, quantity] of Object.entries(symbols)) {
+            const currentTotalRequireSymbol = totalRequireSymbol[symbol];
+            const proportion = currentTotalRequireSymbol !== 0 ? quantity / currentTotalRequireSymbol : 0;
+            const requiredQuantity = Math.ceil((proportion * brokerAllocations[symbol]) / 100) * 100;
+            const allocatedQuantity = Math.min(requiredQuantity, brokerAllocations[symbol]);
+
+            locates[machine][symbol] -= allocatedQuantity;
+            brokerAllocations[symbol] -= allocatedQuantity;
+            totalRequireSymbol[symbol] -= allocatedQuantity;
+
+            newAllocation[machine][symbol] = (newAllocation[machine][symbol] | 0) + allocatedQuantity;
+          }
         }
       }
 
       return newAllocation;
     },
-    [locates, symbolQuantity]
+    []
   );
 
   const updateNewLocates = useCallback(
@@ -66,7 +82,11 @@ const LocateRequests: React.FC = () => {
       if (!sessionId) return console.error('No Session found');
 
       console.log('brokerAllocations', brokerAllocations);
-      const newAllocation = calculateNewAllocation(brokerAllocations);
+
+      const brokerAllocationsClone = { ...brokerAllocations };
+      const totalRequireSymbolClone = { ...totalRequireSymbol };
+      const locateClone = { ...locates };
+      const newAllocation = calculateNewAllocation(brokerAllocationsClone, totalRequireSymbolClone, locateClone);
 
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
@@ -81,7 +101,7 @@ const LocateRequests: React.FC = () => {
 
       setNewAllocation(newAllocation);
     },
-    [sessionId, calculateNewAllocation]
+    [sessionId, calculateNewAllocation, totalRequireSymbol, locates]
   );
 
   return (
@@ -93,7 +113,7 @@ const LocateRequests: React.FC = () => {
         <button className="button" onClick={handleRequestClick}>
           Retrieve Locate Requests
         </button>
-        <BrokerAllocationButton symbolQuantity={symbolQuantity} sessionId={sessionId} updateNewLocates={updateNewLocates} />
+        <BrokerAllocationButton totalRequireSymbol={totalRequireSymbol} sessionId={sessionId} updateNewLocates={updateNewLocates} />
       </div>
       <div className="container">
         <table>
