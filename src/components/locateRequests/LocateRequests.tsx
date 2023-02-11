@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { updateLocates } from '../../common/api';
+import { ProportionLocate } from '../../common/interfaces';
 import { Locates } from '../../common/types';
 import useTotalRequireSymbol from '../../hooks/useTotalRequireSymbol';
 import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
@@ -33,7 +36,8 @@ const LocateRequests: React.FC = () => {
     axios
       .get(`${baseUrl}/${sessionId}/locates`)
       .then((response) => {
-        console.log(response.data);
+        console.log('response.data');
+        console.table(response.data);
         setLocates(response.data);
       })
       .catch((error) => {
@@ -41,48 +45,72 @@ const LocateRequests: React.FC = () => {
       });
   };
 
-  const isCanAllocate = (allocations: Record<string, number>, symbolRequired: Record<string, number>): boolean => {
-    for (const [symbol, quantity] of Object.entries(allocations)) {
-      if (quantity >= 100 && symbolRequired[symbol] >= 100) return true;
-    }
-
-    return false;
-  };
-
   const calculateNewAllocation = useCallback(
     (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
-      const newAllocation: Locates = {};
+      let newAllocation: Locates = {};
 
-      while (isCanAllocate(brokerAllocations, totalRequireSymbol)) {
-        for (const [machine, symbols] of Object.entries(locates)) {
-          newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
+      const locatesCounter = { ...brokerAllocations };
+      let proportionLocates = buildProportionLocates(locates, totalRequireSymbol);
+      proportionLocates = sortProportionLocates(proportionLocates);
 
-          for (const [symbol, quantity] of Object.entries(symbols)) {
-            const currentTotalRequireSymbol = totalRequireSymbol[symbol];
-            if (currentTotalRequireSymbol === 0) break;
-            const proportion = Math.round((quantity / currentTotalRequireSymbol + Number.EPSILON) * 100) / 100;
-            const requiredQuantity = proportion * brokerAllocations[symbol];
-            const allocatedQuantity = Math.min(requiredQuantity, brokerAllocations[symbol]);
+      for (const { machine, symbol, proportion } of proportionLocates) {
+        newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
+        const requiredQuantity = proportion * brokerAllocations[symbol];
+        console.log(machine, symbol, proportion, brokerAllocations[symbol], requiredQuantity);
+        const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
+        const allocationQuantityRoundLot = Math.floor(allocatedQuantity / 100) * 100;
 
-            locates[machine][symbol] -= allocatedQuantity;
-            brokerAllocations[symbol] -= allocatedQuantity;
-            totalRequireSymbol[symbol] -= allocatedQuantity;
-
-            newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocatedQuantity);
-          }
-        }
+        locatesCounter[symbol] -= allocationQuantityRoundLot;
+        newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocationQuantityRoundLot);
       }
+
+      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, locatesCounter);
 
       return newAllocation;
     },
     []
   );
 
+  const calculateAllocationShortage = (
+    newAllocation: Locates,
+    proportionLocates: ProportionLocate[],
+    locatesCounter: Record<string, number>
+  ) => {
+    for (const [locateSymbolCounter] of Object.entries(locatesCounter)) {
+      const locate = proportionLocates.find(
+        ({ machine, symbol, quantity }) => symbol === locateSymbolCounter && quantity && newAllocation[machine][symbol] < quantity
+      );
+
+      if (locate) {
+        newAllocation[locate.machine][locate.symbol] += locatesCounter[locateSymbolCounter];
+      }
+    }
+
+    return newAllocation;
+  };
+
+  const buildProportionLocates = (locates: Locates, totalRequireSymbol: Record<string, number>) => {
+    let proportionArray: ProportionLocate[] = [];
+    for (const [machine, symbols] of Object.entries(locates)) {
+      for (const [symbol, quantity] of Object.entries(symbols)) {
+        const currentTotalRequireSymbol = totalRequireSymbol[symbol];
+        const proportion = currentTotalRequireSymbol !== 0 ? quantity / currentTotalRequireSymbol : 0;
+        proportionArray = [...proportionArray, { machine, symbol, quantity, proportion }];
+      }
+    }
+
+    return proportionArray;
+  };
+
+  const sortProportionLocates = (proportionLocates: ProportionLocate[]) => {
+    return proportionLocates.sort((a, b) => b.proportion - a.proportion);
+  };
+
   const updateNewLocates = useCallback(
     (brokerAllocations: Record<string, number>) => {
       if (!sessionId) return console.error('No Session found');
 
-      console.log('brokerAllocations', brokerAllocations);
+      console.info('brokerAllocations', brokerAllocations);
 
       const brokerAllocationsClone = JSON.parse(JSON.stringify(brokerAllocations));
       const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
@@ -92,6 +120,7 @@ const LocateRequests: React.FC = () => {
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
           if (response.status === 200) {
+            setNewAllocation(newAllocation);
             setShowSuccessMessage(true);
           }
         })
@@ -99,8 +128,6 @@ const LocateRequests: React.FC = () => {
           setShowSuccessMessage(false);
           console.error(error);
         });
-
-      setNewAllocation(newAllocation);
     },
     [sessionId, calculateNewAllocation, totalRequireSymbol, locates]
   );
