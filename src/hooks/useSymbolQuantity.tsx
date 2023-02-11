@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
+import { Locates } from '../common/types';
 
-function fromLocatesToSymbolQuantity(locates: Record<string, Record<string, number>>) {
+function fromLocatesToSymbolQuantity(locates: Locates) {
   const symbolQuantity: Record<string, number> = {};
 
   Object.entries(locates)
-    .map(([machine, symbols]) => Object.entries(symbols).map(([symbol, quantity]) => ({ machine, quantity, symbol })))
-    .flat()
-    .forEach(({ symbol, quantity }) => {
-      symbolQuantity[symbol] = (symbolQuantity[symbol] || 0) + quantity;
-    });
+    .map(([, symbols]) => Object.entries(symbols))
+    .reduce((acc, item) => acc.concat(item))
+    .forEach(([symbol, quantity]) => (symbolQuantity[symbol] = (symbolQuantity[symbol] || 0) + quantity));
 
   return symbolQuantity;
 }
 
-const useSymbolQuantity = (locates: Record<string, Record<string, number>> | null) => {
+const useSymbolQuantity = (locates: Locates | null) => {
   const [symbolQuantity, setSymbolQuantity] = useState<Record<string, number>>({});
 
   useEffect(() => {
