@@ -55,6 +55,16 @@ h1 {
   font-weight: bold;
 }
 
+h2 {
+  padding: 10px;
+  background-color: #dff0d8;
+  border: 1px solid #3c763d;
+  border-radius: 5px;
+  color: #3c763d;
+  font-size: 14px;
+  text-align: center;
+}
+
 h3 {
   text-align: center;
   color: #00b0ff;
