@@ -43,7 +43,7 @@ const LocateRequests: React.FC = () => {
 
   const isCanAllocate = (allocations: Record<string, number>, symbolRequired: Record<string, number>): boolean => {
     for (const [symbol, quantity] of Object.entries(allocations)) {
-      if (quantity !== 0 && symbolRequired[symbol] !== 0) return true;
+      if (quantity >= 100 && symbolRequired[symbol] >= 100) return true;
     }
 
     return false;
@@ -59,15 +59,16 @@ const LocateRequests: React.FC = () => {
 
           for (const [symbol, quantity] of Object.entries(symbols)) {
             const currentTotalRequireSymbol = totalRequireSymbol[symbol];
-            const proportion = currentTotalRequireSymbol !== 0 ? quantity / currentTotalRequireSymbol : 0;
-            const requiredQuantity = Math.ceil((proportion * brokerAllocations[symbol]) / 100) * 100;
+            if (currentTotalRequireSymbol === 0) break;
+            const proportion = Math.round((quantity / currentTotalRequireSymbol + Number.EPSILON) * 100) / 100;
+            const requiredQuantity = proportion * brokerAllocations[symbol];
             const allocatedQuantity = Math.min(requiredQuantity, brokerAllocations[symbol]);
 
             locates[machine][symbol] -= allocatedQuantity;
             brokerAllocations[symbol] -= allocatedQuantity;
             totalRequireSymbol[symbol] -= allocatedQuantity;
 
-            newAllocation[machine][symbol] = (newAllocation[machine][symbol] | 0) + allocatedQuantity;
+            newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocatedQuantity);
           }
         }
       }
@@ -83,9 +84,9 @@ const LocateRequests: React.FC = () => {
 
       console.log('brokerAllocations', brokerAllocations);
 
-      const brokerAllocationsClone = { ...brokerAllocations };
-      const totalRequireSymbolClone = { ...totalRequireSymbol };
-      const locateClone = { ...locates };
+      const brokerAllocationsClone = JSON.parse(JSON.stringify(brokerAllocations));
+      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
+      const locateClone = JSON.parse(JSON.stringify(locates));
       const newAllocation = calculateNewAllocation(brokerAllocationsClone, totalRequireSymbolClone, locateClone);
 
       updateLocates(sessionId, newAllocation)
