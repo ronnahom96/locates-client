@@ -6,7 +6,7 @@ function fromLocatesToSymbolQuantity(locates: Locates) {
 
   Object.entries(locates)
     .map(([, symbols]) => Object.entries(symbols))
-    .reduce((acc, item) => acc.concat(item))
+    .flat()
     .forEach(([symbol, quantity]) => (symbolQuantity[symbol] = (symbolQuantity[symbol] || 0) + quantity));
 
   return symbolQuantity;
