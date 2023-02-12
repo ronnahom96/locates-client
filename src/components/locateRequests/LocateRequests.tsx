@@ -79,7 +79,7 @@ const LocateRequests: React.FC = () => {
       );
 
       if (locate) {
-        newAllocation[locate.machine][locate.symbol] += locatesCounter[locateSymbolCounter];
+        newAllocation[locate.machine][locate.symbol] += Math.floor(locatesCounter[locateSymbolCounter]);
       }
     }
 
