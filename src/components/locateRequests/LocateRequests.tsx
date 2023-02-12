@@ -58,10 +58,9 @@ const LocateRequests: React.FC = () => {
         const requiredQuantity = proportion * brokerAllocations[symbol];
         console.log(machine, symbol, proportion, brokerAllocations[symbol], requiredQuantity);
         const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
-        const allocationQuantityRoundLot = Math.floor(allocatedQuantity / 100) * 100;
 
-        locatesCounter[symbol] -= allocationQuantityRoundLot;
-        newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocationQuantityRoundLot);
+        locatesCounter[symbol] -= allocatedQuantity;
+        newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocatedQuantity);
       }
 
       newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, locatesCounter);
