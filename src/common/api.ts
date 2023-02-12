@@ -16,11 +16,12 @@ export const executeMultipleRequest = async (requests: Promise<unknown>[], delay
     let responseArray: unknown[] = [];
 
     async function executeRequest(request: Promise<unknown> | undefined) {
-        if (requests.length === 0) return responseArray;
-
+        
         try {
             const response = await request;
             responseArray = [...responseArray, response];
+
+            if (requests.length === 0) return responseArray;
             const nextRequest = requests.shift();
             await executeRequest(nextRequest);
         } catch (error: unknown) {
@@ -36,6 +37,5 @@ export const executeMultipleRequest = async (requests: Promise<unknown>[], delay
 
     const request = requests.shift();
     await executeRequest(request);
-
     return responseArray;
 }
