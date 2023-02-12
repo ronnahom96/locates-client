@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { AxiosResponse } from 'axios';
 import React from 'react';
 import { allocateFromBroker } from '../../common/api';
