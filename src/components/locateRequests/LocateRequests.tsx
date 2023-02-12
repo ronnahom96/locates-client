@@ -36,7 +36,6 @@ const LocateRequests: React.FC = () => {
     axios
       .get(`${baseUrl}/${sessionId}/locates`)
       .then((response) => {
-        console.log('response.data');
         console.table(response.data);
         setLocates(response.data);
       })
@@ -56,7 +55,6 @@ const LocateRequests: React.FC = () => {
       for (const { machine, symbol, proportion } of proportionLocates) {
         newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
         const requiredQuantity = proportion * brokerAllocations[symbol];
-        console.log(machine, symbol, proportion, brokerAllocations[symbol], requiredQuantity);
         const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
 
         locatesCounter[symbol] -= allocatedQuantity;
