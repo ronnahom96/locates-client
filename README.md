@@ -1,7 +1,10 @@
 # Locates Client
 
 Technologies: React + Typescript
-TODOs: put session in context
+TODOs:
+
+1. put session in context
+2. Add validation on the second time of clicking the buttons.
 
 Dividing resources considerations:
 
