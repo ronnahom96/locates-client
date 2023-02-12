@@ -4,8 +4,8 @@ import { Locates } from '../common/types';
 function fromLocatesToTotalRequireSymbol(locates: Locates) {
   const totalRequireSymbol: Record<string, number> = {};
 
-  Object.entries(locates)
-    .map(([, symbols]) => Object.entries(symbols))
+  Object.values(locates)
+    .map((symbols) => Object.entries(symbols))
     .flat()
     .forEach(([symbol, quantity]) => (totalRequireSymbol[symbol] = (totalRequireSymbol[symbol] || 0) + quantity));
 
