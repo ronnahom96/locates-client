@@ -45,21 +45,25 @@ const LocateRequests: React.FC = () => {
   const calculateNewAllocation = useCallback(
     (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
       let newAllocation: Locates = {};
+      
+      // Deep clone for not changing the original object
+      const brokerAllocationsClone = {... brokerAllocations };
+      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
+      const locateClone = JSON.parse(JSON.stringify(locates));
 
-      const locatesCounter = { ...brokerAllocations };
-      let proportionLocates = buildProportionLocates(locates, totalRequireSymbol);
+      let proportionLocates = buildProportionLocates(locateClone, totalRequireSymbolClone);
       proportionLocates = sortProportionLocates(proportionLocates);
 
       for (const { machine, symbol, proportion } of proportionLocates) {
         newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
         const requiredQuantity = proportion * brokerAllocations[symbol];
-        const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
+        const allocatedQuantity = Math.min(requiredQuantity, brokerAllocationsClone[symbol]);
 
-        locatesCounter[symbol] -= allocatedQuantity;
+        brokerAllocationsClone[symbol] -= allocatedQuantity;
         newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocatedQuantity);
       }
 
-      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, locatesCounter);
+      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, brokerAllocationsClone);
 
       return newAllocation;
     },
@@ -106,11 +110,7 @@ const LocateRequests: React.FC = () => {
       if (!sessionId) return console.error('No Session found');
 
       console.info('brokerAllocations', brokerAllocations);
-
-      const brokerAllocationsClone = JSON.parse(JSON.stringify(brokerAllocations));
-      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
-      const locateClone = JSON.parse(JSON.stringify(locates));
-      const newAllocation = calculateNewAllocation(brokerAllocationsClone, totalRequireSymbolClone, locateClone);
+      const newAllocation = calculateNewAllocation(brokerAllocations, totalRequireSymbol, locates);
 
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
@@ -152,7 +152,7 @@ const LocateRequests: React.FC = () => {
             {Object.entries(locates).map(([machine, symbols]) => (
               <React.Fragment key={machine}>
                 {Object.entries(symbols).map(([symbol, locates]) => (
-                  <tr key={`${machine},${symbol}`}>
+                  <tr key={`${machine}-${symbol}`}>
                     <td>{machine}</td>
                     <td>{symbol}</td>
                     <td>{locates}</td>
