@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { updateLocates } from '../../common/api';
+import { ProportionLocate } from '../../common/interfaces';
 import { Locates } from '../../common/types';
-import useSymbolQuantity from '../../hooks/useSymbolQuantity';
+import useTotalRequireSymbol from '../../hooks/useTotalRequireSymbol';
 import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
 import './LocateRequests.css';
 
@@ -14,7 +17,7 @@ const LocateRequests: React.FC = () => {
   const [newAllocation, setNewAllocation] = useState<Locates>({});
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const symbolQuantity = useSymbolQuantity(locates);
+  const totalRequireSymbol = useTotalRequireSymbol(locates);
 
   useEffect(() => {
     // Create a new session when the component mounts
@@ -33,7 +36,7 @@ const LocateRequests: React.FC = () => {
     axios
       .get(`${baseUrl}/${sessionId}/locates`)
       .then((response) => {
-        console.log(response.data);
+        console.table(response.data);
         setLocates(response.data);
       })
       .catch((error) => {
@@ -42,35 +45,79 @@ const LocateRequests: React.FC = () => {
   };
 
   const calculateNewAllocation = useCallback(
-    (brokerAllocations: Record<string, number>) => {
-      const newAllocation: Locates = {};
+    (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
+      let newAllocation: Locates = {};
 
-      for (const [machine, symbols] of Object.entries(locates)) {
-        newAllocation[machine] = {};
-        for (const [symbol, quantity] of Object.entries(symbols)) {
-          const currentSymbolQuantity = symbolQuantity[symbol];
-          const proportion = currentSymbolQuantity !== 0 ? quantity / currentSymbolQuantity : 0;
-          const newQuantity = Math.round(proportion * brokerAllocations[symbol]);
-          brokerAllocations[symbol] -= newQuantity;
-          newAllocation[machine][symbol] = newQuantity;
-        }
+      const locatesCounter = { ...brokerAllocations };
+      let proportionLocates = buildProportionLocates(locates, totalRequireSymbol);
+      proportionLocates = sortProportionLocates(proportionLocates);
+
+      for (const { machine, symbol, proportion } of proportionLocates) {
+        newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
+        const requiredQuantity = proportion * brokerAllocations[symbol];
+        const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
+
+        locatesCounter[symbol] -= allocatedQuantity;
+        newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocatedQuantity);
       }
+
+      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, locatesCounter);
 
       return newAllocation;
     },
-    [locates, symbolQuantity]
+    []
   );
+
+  const calculateAllocationShortage = (
+    newAllocation: Locates,
+    proportionLocates: ProportionLocate[],
+    locatesCounter: Record<string, number>
+  ) => {
+    for (const [locateSymbolCounter] of Object.entries(locatesCounter)) {
+      const locate = proportionLocates.find(
+        ({ machine, symbol, quantity }) => symbol === locateSymbolCounter && quantity && newAllocation[machine][symbol] < quantity
+      );
+
+      if (locate) {
+        newAllocation[locate.machine][locate.symbol] += locatesCounter[locateSymbolCounter];
+      }
+    }
+
+    return newAllocation;
+  };
+
+  const buildProportionLocates = (locates: Locates, totalRequireSymbol: Record<string, number>) => {
+    let proportionArray: ProportionLocate[] = [];
+    for (const [machine, symbols] of Object.entries(locates)) {
+      for (const [symbol, quantity] of Object.entries(symbols)) {
+        const currentTotalRequireSymbol = totalRequireSymbol[symbol];
+        const proportion = currentTotalRequireSymbol !== 0 ? quantity / currentTotalRequireSymbol : 0;
+        proportionArray = [...proportionArray, { machine, symbol, quantity, proportion }];
+      }
+    }
+
+    return proportionArray;
+  };
+
+  const sortProportionLocates = (proportionLocates: ProportionLocate[]) => {
+    return proportionLocates.sort((a, b) => b.proportion - a.proportion);
+  };
 
   const updateNewLocates = useCallback(
     (brokerAllocations: Record<string, number>) => {
       if (!sessionId) return console.error('No Session found');
 
-      console.log('brokerAllocations', brokerAllocations);
-      const newAllocation = calculateNewAllocation(brokerAllocations);
+      console.info('brokerAllocations', brokerAllocations);
+
+      const brokerAllocationsClone = JSON.parse(JSON.stringify(brokerAllocations));
+      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
+      const locateClone = JSON.parse(JSON.stringify(locates));
+      const newAllocation = calculateNewAllocation(brokerAllocationsClone, totalRequireSymbolClone, locateClone);
 
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
           if (response.status === 200) {
+            setNewAllocation(newAllocation);
             setShowSuccessMessage(true);
           }
         })
@@ -78,10 +125,8 @@ const LocateRequests: React.FC = () => {
           setShowSuccessMessage(false);
           console.error(error);
         });
-
-      setNewAllocation(newAllocation);
     },
-    [sessionId, calculateNewAllocation]
+    [sessionId, calculateNewAllocation, totalRequireSymbol, locates]
   );
 
   return (
@@ -93,7 +138,7 @@ const LocateRequests: React.FC = () => {
         <button className="button" onClick={handleRequestClick}>
           Retrieve Locate Requests
         </button>
-        <BrokerAllocationButton symbolQuantity={symbolQuantity} sessionId={sessionId} updateNewLocates={updateNewLocates} />
+        <BrokerAllocationButton totalRequireSymbol={totalRequireSymbol} sessionId={sessionId} updateNewLocates={updateNewLocates} />
       </div>
       <div className="container">
         <table>

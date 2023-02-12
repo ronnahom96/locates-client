@@ -7,7 +7,7 @@ import './BrokerAllocationButton.css';
 
 interface BrokerAllocationButtonProps {
   sessionId: string | null;
-  symbolQuantity: Record<string, number>;
+  totalRequireSymbol: Record<string, number>;
   updateNewLocates: (brokerAllocations: Record<string, number>) => void;
 }
 
@@ -20,7 +20,7 @@ const fromRawToBrokerAllocationMap = (brokerAllocationRaw: BrokerAllocate[]) => 
   return brokerAllocations;
 };
 
-const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, symbolQuantity, updateNewLocates }) => {
+const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ sessionId, totalRequireSymbol, updateNewLocates }) => {
   const handleRequestClick = async () => {
     if (!sessionId) return console.error('No Session found');
 
@@ -34,7 +34,7 @@ const BrokerAllocationButton: React.FC<BrokerAllocationButtonProps> = ({ session
   };
 
   const buildBrokerAllocationRequests = (sessionId: string) =>
-    Object.entries(symbolQuantity).map(([symbol, quantity]) => allocateFromBroker(sessionId, symbol, quantity));
+    Object.entries(totalRequireSymbol).map(([symbol, quantity]) => allocateFromBroker(sessionId, symbol, quantity));
 
   return (
     <button className="button" onClick={handleRequestClick}>
