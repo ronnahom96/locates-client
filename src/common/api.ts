@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 
 const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session';
 
@@ -7,6 +7,6 @@ export const allocateFromBroker = (sessionId: string, symbol: string, quantity: 
     return axios.post(`${baseUrl}/${sessionId}/broker`, null, { params });
 };
 
-export const updateLocates = (sessionId: string, newAllocation: Record<string, Record<string, number>>): Promise<AxiosResponse<any>> => {
+export const updateLocates = (sessionId: string, newAllocation: Record<string, Record<string, number>>) => {
     return axios.put(`${baseUrl}/${sessionId}/locates`, newAllocation);
 };

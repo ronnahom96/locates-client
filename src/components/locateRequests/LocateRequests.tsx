@@ -1,11 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-unused-vars */
 import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { updateLocates } from '../../common/api';
 import { ProportionLocate } from '../../common/interfaces';
 import { Locates } from '../../common/types';
-import useTotalRequireSymbol from '../../hooks/useTotalRequireSymbol';
 import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
 import './LocateRequests.css';
 
@@ -17,7 +14,17 @@ const LocateRequests: React.FC = () => {
   const [newAllocation, setNewAllocation] = useState<Locates>({});
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const totalRequireSymbol = useTotalRequireSymbol(locates);
+  const totalRequireSymbol = useMemo<Record<string, number>>(() => {
+    const totalRequireSymbol: Record<string, number> = {};
+
+    Object.values(locates)
+      .map((symbols) => Object.entries(symbols))
+      .flat()
+      .forEach(([symbol, quantity]) => (totalRequireSymbol[symbol] = (totalRequireSymbol[symbol] || 0) + quantity));
+
+    return totalRequireSymbol;
+
+  }, [locates])
 
   useEffect(() => {
     // Create a new session when the component mounts
@@ -48,21 +55,25 @@ const LocateRequests: React.FC = () => {
     (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
       let newAllocation: Locates = {};
 
-      const locatesCounter = { ...brokerAllocations };
-      let proportionLocates = buildProportionLocates(locates, totalRequireSymbol);
+      // Deep clone for not changing the original object
+      const brokerAllocationsClone = { ...brokerAllocations };
+      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
+      const locateClone = JSON.parse(JSON.stringify(locates));
+
+      let proportionLocates = buildProportionLocates(locateClone, totalRequireSymbolClone);
       proportionLocates = sortProportionLocates(proportionLocates);
 
       for (const { machine, symbol, proportion } of proportionLocates) {
         newAllocation[machine] = newAllocation[machine] ? newAllocation[machine] : {};
         const requiredQuantity = proportion * brokerAllocations[symbol];
-        const allocatedQuantity = Math.min(requiredQuantity, locatesCounter[symbol]);
+        const allocatedQuantity = Math.min(requiredQuantity, brokerAllocationsClone[symbol]);
         const allocationQuantityRoundLot = Math.floor(allocatedQuantity / 100) * 100;
 
-        locatesCounter[symbol] -= allocationQuantityRoundLot;
+        brokerAllocationsClone[symbol] -= allocationQuantityRoundLot;
         newAllocation[machine][symbol] = Math.floor((newAllocation[machine][symbol] | 0) + allocationQuantityRoundLot);
       }
 
-      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, locatesCounter);
+      newAllocation = calculateAllocationShortage(newAllocation, proportionLocates, brokerAllocationsClone);
 
       return newAllocation;
     },
@@ -109,11 +120,7 @@ const LocateRequests: React.FC = () => {
       if (!sessionId) return console.error('No Session found');
 
       console.info('brokerAllocations', brokerAllocations);
-
-      const brokerAllocationsClone = JSON.parse(JSON.stringify(brokerAllocations));
-      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
-      const locateClone = JSON.parse(JSON.stringify(locates));
-      const newAllocation = calculateNewAllocation(brokerAllocationsClone, totalRequireSymbolClone, locateClone);
+      const newAllocation = calculateNewAllocation(brokerAllocations, totalRequireSymbol, locates);
 
       updateLocates(sessionId, newAllocation)
         .then((response): any => {
@@ -155,7 +162,7 @@ const LocateRequests: React.FC = () => {
             {Object.entries(locates).map(([machine, symbols]) => (
               <React.Fragment key={machine}>
                 {Object.entries(symbols).map(([symbol, locates]) => (
-                  <tr key={`${machine},${symbol}`}>
+                  <tr key={`${machine}-${symbol}`}>
                     <td>{machine}</td>
                     <td>{symbol}</td>
                     <td>{locates}</td>
