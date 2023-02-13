@@ -8,6 +8,8 @@ import './LocateRequests.css';
 
 const baseUrl = 'https://9g7qfsq0qk.execute-api.us-east-1.amazonaws.com/v1/session'; //"https://task.qspark.trade/v1/session";
 
+const deepClone = (obj: any) => JSON.parse(JSON.stringify(obj));
+
 const LocateRequests: React.FC = () => {
   const [sessionId, setSessionId] = useState(null);
   const [locates, setLocates] = useState<Locates>({});
@@ -56,9 +58,9 @@ const LocateRequests: React.FC = () => {
       let newAllocation: Locates = {};
 
       // Deep clone for not changing the original object
-      const brokerAllocationsClone = { ...brokerAllocations };
-      const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
-      const locateClone = JSON.parse(JSON.stringify(locates));
+      const brokerAllocationsClone = deepClone(brokerAllocations);
+      const totalRequireSymbolClone = deepClone(totalRequireSymbol);
+      const locateClone = deepClone(locates);
 
       let proportionLocates = buildProportionLocates(locateClone, totalRequireSymbolClone);
       proportionLocates = sortProportionLocates(proportionLocates);
@@ -85,17 +87,18 @@ const LocateRequests: React.FC = () => {
     proportionLocates: ProportionLocate[],
     locatesCounter: Record<string, number>
   ) => {
+    const newAllocationClone = deepClone(newAllocation);
+
     for (const [locateSymbolCounter] of Object.entries(locatesCounter)) {
-      const locate = proportionLocates.find(
-        ({ machine, symbol, quantity }) => symbol === locateSymbolCounter && quantity && newAllocation[machine][symbol] < quantity
-      );
+      const locate = proportionLocates.find(({ machine, symbol, quantity }) => locatesCounter[locateSymbolCounter] !== 0 &&
+        symbol === locateSymbolCounter && newAllocationClone[machine][symbol] < quantity);
 
       if (locate) {
-        newAllocation[locate.machine][locate.symbol] += Math.floor(locatesCounter[locateSymbolCounter]);
+        newAllocationClone[locate.machine][locate.symbol] += Math.floor(locatesCounter[locateSymbolCounter]);
       }
     }
 
-    return newAllocation;
+    return newAllocationClone;
   };
 
   const buildProportionLocates = (locates: Locates, totalRequireSymbol: Record<string, number>) => {
