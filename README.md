@@ -5,6 +5,9 @@ TODOs:
 
 1. put session in context
 2. Add validation on the second time of clicking the buttons.
+3. Sort table by machine name
+4. Improve ui
+5. Share shortage by multiple machines
 
 Dividing resources considerations:
 
