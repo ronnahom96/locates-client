@@ -1,9 +1,8 @@
 import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { updateLocates } from '../../common/api';
 import { ProportionLocate } from '../../common/interfaces';
 import { Locates } from '../../common/types';
-import useTotalRequireSymbol from '../../hooks/useTotalRequireSymbol';
 import BrokerAllocationButton from '../brokerAllocationButton/BrokerAllocationButton';
 import './LocateRequests.css';
 
@@ -15,7 +14,17 @@ const LocateRequests: React.FC = () => {
   const [newAllocation, setNewAllocation] = useState<Locates>({});
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const totalRequireSymbol = useTotalRequireSymbol(locates);
+  const totalRequireSymbol = useMemo<Record<string, number>>(() => {
+    const totalRequireSymbol: Record<string, number> = {};
+
+    Object.values(locates)
+      .map((symbols) => Object.entries(symbols))
+      .flat()
+      .forEach(([symbol, quantity]) => (totalRequireSymbol[symbol] = (totalRequireSymbol[symbol] || 0) + quantity));
+
+    return totalRequireSymbol;
+
+  }, [locates])
 
   useEffect(() => {
     // Create a new session when the component mounts
@@ -45,9 +54,9 @@ const LocateRequests: React.FC = () => {
   const calculateNewAllocation = useCallback(
     (brokerAllocations: Record<string, number>, totalRequireSymbol: Record<string, number>, locates: Locates) => {
       let newAllocation: Locates = {};
-      
+
       // Deep clone for not changing the original object
-      const brokerAllocationsClone = {... brokerAllocations };
+      const brokerAllocationsClone = { ...brokerAllocations };
       const totalRequireSymbolClone = JSON.parse(JSON.stringify(totalRequireSymbol));
       const locateClone = JSON.parse(JSON.stringify(locates));
 
